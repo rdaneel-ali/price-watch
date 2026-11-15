@@ -6,9 +6,6 @@ from dataclasses import dataclass
 from price_watch.config import LIMITS, MICRO_DOLLARS_PER_DOLLAR, MODEL
 
 TOKENS_PER_MILLION = 1_000_000
-# Instructions and the listing shape sent with every page. Slice 4 replaces this guess
-# with the real prompt length.
-PROMPT_OVERHEAD_CHARACTERS = 3_000
 
 
 @dataclass(frozen=True, slots=True)

@@ -25,6 +25,14 @@ For development, watches live in a JSON file (`PRICE_WATCH_STORE`, default `.pri
 uv run pw check <watch_id> --dry-run
 ```
 
+A real check calls OpenRouter and needs `OPENROUTER_API_KEY` (from the environment or a local `.env`):
+
+```sh
+uv run pw check <watch_id>
+```
+
+Spend is capped per day and per month (see `src/price_watch/config.py`).
+
 ## License
 
 MIT

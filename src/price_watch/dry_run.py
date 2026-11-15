@@ -4,15 +4,11 @@ from dataclasses import dataclass
 
 import httpx
 
-from price_watch.estimate import (
-    PROMPT_OVERHEAD_CHARACTERS,
-    Estimate,
-    estimate_worst_case,
-    format_dollars,
-)
+from price_watch.estimate import Estimate, estimate_worst_case, format_dollars
 from price_watch.fetch import FetchError, PageTooLargeError, fetch_url
 from price_watch.grouping import UrlGroup, group_source_urls
 from price_watch.models import SourceStatus, Watch
+from price_watch.prompt import build_request_body, count_request_characters
 from price_watch.trim import trim_page
 
 
@@ -46,8 +42,8 @@ def run_dry_run(watch: Watch, client: httpx.Client) -> list[DryRunEntry]:
         if status is not SourceStatus.OK:
             entries.append(DryRunEntry(group.url, status))
             continue
-        spec_characters = sum(len(use.watch.spec) for use in group.uses)
-        request_characters = PROMPT_OVERHEAD_CHARACTERS + spec_characters + len(text)
+        specs = [(use.watch.watch_id, use.watch.spec) for use in group.uses]
+        request_characters = count_request_characters(build_request_body(group.url, text, specs))
         entries.append(
             DryRunEntry(group.url, status, len(text), estimate_worst_case(request_characters))
         )

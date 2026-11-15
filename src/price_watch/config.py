@@ -32,6 +32,7 @@ class Caps:
 class Limits:
     max_urls_per_run: int
     fetch_timeout_seconds: float
+    ai_timeout_seconds: float
     max_response_bytes: int
     max_page_characters: int
     max_output_tokens: int
@@ -53,6 +54,7 @@ CAPS = Caps(
 LIMITS = Limits(
     max_urls_per_run=8,
     fetch_timeout_seconds=10.0,
+    ai_timeout_seconds=60.0,
     max_response_bytes=2 * 1024 * 1024,
     max_page_characters=60_000,
     max_output_tokens=4_000,
@@ -61,3 +63,8 @@ LIMITS = Limits(
 )
 
 MAX_SOURCES_PER_WATCH = 5
+
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+API_KEY_ENV = "OPENROUTER_API_KEY"
+HISTORY_DAYS = 30
+SUSPICIOUS_PERCENT = 60
