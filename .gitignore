@@ -1,0 +1,30 @@
+# Secrets and local config
+.env
+.env.*
+!.env.example
+CLAUDE.local.md
+
+# Local data
+.price-watch/
+
+# Never commit
+*.tfstate*
+*.tfvars
+.terraform/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.pyright/
+dist/
+build/
+*.egg-info/
+.coverage
+htmlcov/
+
+# OS and editor
+.DS_Store
+.vscode/settings.json
