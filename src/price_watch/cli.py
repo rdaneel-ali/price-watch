@@ -84,8 +84,10 @@ def command_check(
         return 2
     now = datetime.now(UTC)
     with make_client(transport) as fetch_client, make_ai_client(transport) as ai_client:
-        checks = run_check([watch], store, fetch_client, ai_client, api_key, now)
-    print("\n".join(format_check(check) for check in checks))
+        run_check([watch], store, fetch_client, ai_client, api_key, now)
+    # Read the stored result back so the output never derives from the key-carrying call.
+    latest = store.list_checks(watch.watch_id)[-1].check
+    print(format_check(latest))
     print(format_spend(store, now))
     return 0
 
