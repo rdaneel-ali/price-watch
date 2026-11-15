@@ -78,7 +78,7 @@ def command_check(
     api_key = environ.get(API_KEY_ENV)
     if not api_key:
         print(
-            f"pw: {API_KEY_ENV} is not set. Put it in a local .env file or export it.",
+            "pw: OPENROUTER_API_KEY is not set. Put it in a local .env file or export it.",
             file=sys.stderr,
         )
         return 2
