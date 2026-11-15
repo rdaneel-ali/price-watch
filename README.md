@@ -17,6 +17,14 @@ uv run pytest
 
 Secrets such as the OpenRouter key are read from the environment (`OPENROUTER_API_KEY`). In development, put them in a gitignored `.env` file. Never commit them.
 
+## Local store
+
+For development, watches live in a JSON file (`PRICE_WATCH_STORE`, default `.price-watch/store.json`, gitignored) shaped as `{"watches": {"<watch_id>": {...}}}`. Check a watch without calling the AI:
+
+```sh
+uv run pw check <watch_id> --dry-run
+```
+
 ## License
 
 MIT
