@@ -10,10 +10,11 @@ CENTS_PER_DOLLAR = 100
 class ModelConfig:
     """The pinned model and its prices, in micro-dollars per million tokens.
 
-    PLACEHOLDER PRICES: OpenRouter lists several providers for this model with different
-    prices ($0.05 to $3 input per million tokens). These are the common mid-range rates
-    ($0.30 input, $1.20 output) and are unconfirmed. Verify against the public model page
-    before relying on cost estimates. Real costs come from OpenRouter's response.
+    Confirmed on OpenRouter on 2026-11-15: $0.30 input and $1.20 output per million tokens
+    is the model's standard rate. Providers range from $0.05 to $3 input; these prices are
+    also the request's `provider.max_price`, so pricier providers are refused and the budget
+    reservation is a true worst case for token cost. Re-check them if calls start failing
+    with no eligible provider. Real costs come from OpenRouter's response.
     """
 
     name: str
