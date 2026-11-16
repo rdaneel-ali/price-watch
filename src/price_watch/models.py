@@ -4,6 +4,7 @@ Money is integer cents, AI spend is integer micro-dollars, timestamps are UTC IS
 a trailing Z.
 """
 
+from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Self
 from urllib.parse import urlsplit
@@ -30,13 +31,25 @@ def check_https_url(value: str) -> str:
     return value
 
 
+def check_not_manual_name(value: str) -> str:
+    if value.strip().casefold() == MANUAL_SOURCE_NAME.casefold():
+        raise ValueError(f"'{MANUAL_SOURCE_NAME}' is reserved for the manual price")
+    return value
+
+
+def check_real_timestamp(value: str) -> str:
+    datetime.fromisoformat(value)  # raises ValueError on a date or time that doesn't exist
+    return value
+
+
 HttpsUrl = Annotated[str, AfterValidator(check_https_url)]
-Cents = Annotated[int, Field(gt=0)]
-MicroDollars = Annotated[int, Field(ge=0)]
-Count = Annotated[int, Field(ge=0)]
+Cents = Annotated[int, Field(gt=0, strict=True)]
+MicroDollars = Annotated[int, Field(ge=0, strict=True)]
+Count = Annotated[int, Field(ge=0, strict=True)]
 UtcTimestamp = Annotated[
     str,
     StringConstraints(pattern=r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$"),
+    AfterValidator(check_real_timestamp),
 ]
 
 
@@ -74,7 +87,7 @@ class SourceStatus(StrEnum):
 
 class Source(Model):
     source_id: str = Field(min_length=1)
-    name: str = Field(min_length=1)
+    name: Annotated[str, Field(min_length=1), AfterValidator(check_not_manual_name)]
     url: HttpsUrl
     enabled: bool = True
     terms_note: str | None = None
@@ -144,6 +157,7 @@ class Check(Model):
     """One per watch per run. Its best listing, kept for every check, is the price history."""
 
     watch_id: str
+    user_id: str = Field(min_length=1)
     checked_at: UtcTimestamp
     sources: tuple[SourceResult, ...]
     best: Listing | None = None
@@ -192,7 +206,7 @@ class ContractListing(Model):
 
     @model_validator(mode="after")
     def check_url_only_null_for_manual(self) -> Self:
-        if (self.url is None) != (self.source_name == MANUAL_SOURCE_NAME):
+        if self.url is None and self.source_name != MANUAL_SOURCE_NAME:
             raise ValueError("url is null only for the listing whose source_name is 'Manual'")
         return self
 

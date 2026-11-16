@@ -60,12 +60,33 @@ def test_timestamp_needs_trailing_z(bad: str) -> None:
         BestResponse.model_validate(raw)
 
 
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "2026-02-29T14:00:00Z",
+        "2026-02-30T14:00:00Z",
+        "2026-11-14T25:00:00Z",
+        "2026-11-14T14:61:00Z",
+    ],
+)
+def test_timestamp_must_be_a_real_date_and_time(bad: str) -> None:
+    raw = {**load_fixture("best.json"), "checked_at": bad}
+    with pytest.raises(ValidationError):
+        BestResponse.model_validate(raw)
+
+
+def test_timestamp_keeps_its_original_text() -> None:
+    raw = {**load_fixture("best.json"), "checked_at": "2026-11-14T14:00:00.123Z"}
+    assert BestResponse.model_validate(raw).checked_at == "2026-11-14T14:00:00.123Z"
+
+
 def test_contract_url_null_only_for_manual() -> None:
     raw = load_fixture("best.json")["best"]
     with pytest.raises(ValidationError):
         ContractListing.model_validate({**raw, "url": None})
-    with pytest.raises(ValidationError):
-        ContractListing.model_validate({**raw, "source_name": "Manual"})
+    manual = {**raw, "source_name": "Manual"}
+    assert ContractListing.model_validate(manual).url == raw["url"]
+    assert ContractListing.model_validate({**manual, "url": None}).url is None
 
 
 @pytest.mark.parametrize("bad", ["http://example.com/a", "/relative", "https://", "ftp://x.com"])
@@ -97,6 +118,12 @@ def test_listing_price_must_be_positive() -> None:
     for price in (0, -5):
         with pytest.raises(ValidationError):
             Listing.model_validate(make_listing(price=price))
+
+
+@pytest.mark.parametrize("bad", [True, 100000.0, "100000"])
+def test_listing_price_must_be_a_real_int(bad: object) -> None:
+    with pytest.raises(ValidationError):
+        Listing.model_validate(make_listing(price=bad))
 
 
 def test_ai_listing_needs_url_and_confidence() -> None:
@@ -165,6 +192,12 @@ def test_watch_rejects_duplicate_and_reserved_source_ids() -> None:
         Watch.model_validate(make_watch(sources=reserved))
 
 
+@pytest.mark.parametrize("reserved", ["Manual", "manual", " MANUAL "])
+def test_source_name_manual_is_reserved(reserved: str) -> None:
+    with pytest.raises(ValidationError):
+        Source.model_validate({"source_id": "s", "name": reserved, "url": "https://a.example.com"})
+
+
 def test_source_rejects_http_url() -> None:
     with pytest.raises(ValidationError):
         Source.model_validate({"source_id": "s", "name": "n", "url": "http://a.example.com"})
@@ -178,6 +211,7 @@ def test_manual_price_optional_fields() -> None:
 def test_check_with_source_statuses() -> None:
     check = Check(
         watch_id="w_01",
+        user_id="u_1",
         checked_at=NOW,
         sources=(
             SourceResult(source_id="s1", status=SourceStatus.OK, listing_count=3),
@@ -188,6 +222,13 @@ def test_check_with_source_statuses() -> None:
     assert check.sources[1].listing_count == 0
 
 
+def test_check_needs_user_id() -> None:
+    with pytest.raises(ValidationError):
+        Check.model_validate({"watch_id": "w_01", "checked_at": NOW, "sources": []})
+    with pytest.raises(ValidationError):
+        Check.model_validate({"watch_id": "w_01", "user_id": "", "checked_at": NOW, "sources": []})
+
+
 def test_spend_period_format() -> None:
     assert Spend(period="DAY#2026-11-14").cost == 0
     assert Spend(period="MONTH#2026-11").calls == 0
@@ -195,6 +236,13 @@ def test_spend_period_format() -> None:
         Spend(period="WEEK#2026-11")
     with pytest.raises(ValidationError):
         Spend(period="DAY#2026-11-14", cost=-1)
+
+
+@pytest.mark.parametrize("field", ["cost", "calls", "input_tokens", "output_tokens"])
+def test_spend_counts_must_be_real_ints(field: str) -> None:
+    for bad in (True, 1.0, "1"):
+        with pytest.raises(ValidationError):
+            Spend.model_validate({"period": "DAY#2026-11-14", field: bad})
 
 
 def test_config_values() -> None:
