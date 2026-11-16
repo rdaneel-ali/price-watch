@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from price_watch.models import Watch
+from price_watch.models import Check, Spend, Watch
 from price_watch.store import DEFAULT_STORE_PATH, STORE_PATH_ENV, JsonFileStore, resolve_store_path
 
 NOW = "2026-11-14T14:00:00Z"
@@ -52,3 +52,25 @@ def test_watch_key_must_match_watch_id(tmp_path: Path) -> None:
     path.write_text(json.dumps({"watches": {"alias": make_watch("w1").model_dump(mode="json")}}))
     with pytest.raises(ValueError, match="doesn't match"):
         JsonFileStore(path).get_watch("alias")
+
+
+def test_check_key_must_match_check_watch_id(tmp_path: Path) -> None:
+    store = JsonFileStore(tmp_path / "s.json")
+    for watch_id in ("w1", "w2"):
+        store.save_check(Check(watch_id=watch_id, user_id="u", checked_at=NOW, sources=()), [])
+    assert len(store.list_checks("w1")) == 1  # matching keys load
+    raw = json.loads(store.path.read_text())
+    raw["checks"]["w1"].append(raw["checks"].pop("w2")[0])  # a w2 check under w1, second in list
+    store.path.write_text(json.dumps(raw))
+    with pytest.raises(ValueError, match="doesn't match check watch_id"):
+        store.list_checks("w1")
+
+
+def test_spend_key_must_match_period(tmp_path: Path) -> None:
+    store = JsonFileStore(tmp_path / "s.json")
+    store.put_spend(Spend(period="DAY#2026-11-14", cost=5))
+    raw = json.loads(store.path.read_text())
+    raw["spend"] = {"DAY#2026-11-15": raw["spend"]["DAY#2026-11-14"]}
+    store.path.write_text(json.dumps(raw))
+    with pytest.raises(ValueError, match="doesn't match spend period"):
+        store.get_spend("DAY#2026-11-15")
