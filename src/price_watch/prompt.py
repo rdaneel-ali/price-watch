@@ -4,7 +4,7 @@ import json
 from collections.abc import Sequence
 from typing import Any
 
-from price_watch.config import LIMITS, MODEL
+from price_watch.config import LIMITS, MICRO_DOLLARS_PER_DOLLAR, MODEL
 from price_watch.models import Condition, Confidence
 
 SYSTEM_PROMPT = (
@@ -70,7 +70,17 @@ def build_request_body(
             {"role": "user", "content": json.dumps(user_content)},
         ],
         "max_tokens": LIMITS.max_output_tokens,
-        "provider": {"allow_fallbacks": False, "require_parameters": True},
+        "provider": {
+            "allow_fallbacks": False,
+            "require_parameters": True,
+            # Refuse providers priced above the configured rates, so the budget
+            # reservation (made at those rates) is a true worst case.
+            "max_price": {
+                "prompt": MODEL.input_micro_dollars_per_million_tokens / MICRO_DOLLARS_PER_DOLLAR,
+                "completion": MODEL.output_micro_dollars_per_million_tokens
+                / MICRO_DOLLARS_PER_DOLLAR,
+            },
+        },
         "response_format": {
             "type": "json_schema",
             "json_schema": {"name": "listings", "strict": True, "schema": RESPONSE_SCHEMA},

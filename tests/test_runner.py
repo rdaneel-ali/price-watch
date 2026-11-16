@@ -98,7 +98,11 @@ def test_request_is_pinned_no_fallback_capped_and_page_is_data(tmp_path: Path) -
     body = world.ai_bodies[0]
     assert body["model"] == MODEL.name
     assert body["max_tokens"] == LIMITS.max_output_tokens
-    assert body["provider"] == {"allow_fallbacks": False, "require_parameters": True}
+    assert body["provider"] == {
+        "allow_fallbacks": False,
+        "require_parameters": True,
+        "max_price": {"prompt": 0.3, "completion": 1.2},  # $ per million tokens
+    }
     assert "tools" not in body
     assert world.ai_headers[0]["authorization"] == f"Bearer {KEY}"
     user = user_payload(body)
@@ -201,3 +205,30 @@ def test_cli_end_to_end_prints_best_and_spend(
     assert code == 0
     assert "$1,359.00" in out and "meets target" in out and "Spend today" in out
     assert KEY not in out
+
+
+def test_cli_refuses_a_disabled_watch(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    store = JsonFileStore(tmp_path / "s.json")
+    store.put_watch(make_watch().model_copy(update={"enabled": False}))
+    world = FakeWorld([[listing_item(135900)]])
+    code = main(
+        ["check", "w1"],
+        store=store,
+        transport=world.transport(),
+        environ={"OPENROUTER_API_KEY": KEY},
+    )
+    assert code == 1
+    assert "disabled" in capsys.readouterr().err
+    assert world.ai_bodies == [] and store.list_checks("w1") == []
+
+
+def test_cli_dry_run_works_on_a_disabled_watch(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    store = JsonFileStore(tmp_path / "s.json")
+    store.put_watch(make_watch().model_copy(update={"enabled": False}))
+    world = FakeWorld([[listing_item(135900)]])
+    code = main(["check", "w1", "--dry-run"], store=store, transport=world.transport(), environ={})
+    assert code == 0
+    assert capsys.readouterr().out
+    assert world.ai_bodies == [] and store.list_checks("w1") == []

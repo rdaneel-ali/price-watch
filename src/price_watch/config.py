@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 MICRO_DOLLARS_PER_DOLLAR = 1_000_000
+CENTS_PER_DOLLAR = 100
 
 
 @dataclass(frozen=True, slots=True)

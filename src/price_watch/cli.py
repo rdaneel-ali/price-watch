@@ -14,7 +14,7 @@ from price_watch.budget import SpendLedger
 from price_watch.config import API_KEY_ENV, CAPS
 from price_watch.dry_run import format_dry_run, run_dry_run
 from price_watch.env import load_env_file
-from price_watch.estimate import format_dollars
+from price_watch.estimate import format_cents, format_dollars
 from price_watch.fetch import make_client
 from price_watch.models import Check
 from price_watch.openrouter import make_ai_client
@@ -49,7 +49,7 @@ def format_check(check: Check) -> str:
     else:
         flag = " [SUSPICIOUS: " + (best.suspicious_reason or "") + "]" if best.suspicious else ""
         target = "meets target" if best.meets_target else "above target"
-        lines.append(f"  Best: ${best.price / 100:,.2f} ({target}) {best.title}{flag}")
+        lines.append(f"  Best: {format_cents(best.price)} ({target}) {best.title}{flag}")
     return "\n".join(lines)
 
 
@@ -71,10 +71,13 @@ def command_check(
     if watch is None:
         print(f"pw: no watch with id {args.watch!r}", file=sys.stderr)
         return 1
-    if args.dry_run:
+    if args.dry_run:  # allowed on a disabled watch: it makes no AI call
         with make_client(transport) as client:
             print(format_dry_run(run_dry_run(watch, client)))
         return 0
+    if not watch.enabled:
+        print(f"pw: watch {args.watch!r} is disabled", file=sys.stderr)
+        return 1
     api_key = environ.get(API_KEY_ENV)
     if not api_key:
         print(

@@ -3,7 +3,7 @@
 
 from dataclasses import dataclass
 
-from price_watch.config import LIMITS, MICRO_DOLLARS_PER_DOLLAR, MODEL
+from price_watch.config import CENTS_PER_DOLLAR, LIMITS, MICRO_DOLLARS_PER_DOLLAR, MODEL
 
 TOKENS_PER_MILLION = 1_000_000
 
@@ -30,4 +30,16 @@ def estimate_worst_case(request_characters: int) -> Estimate:
 
 
 def format_dollars(micro_dollars: int) -> str:
-    return f"${micro_dollars / MICRO_DOLLARS_PER_DOLLAR:.6f}"
+    """Micro-dollars as `$0.100000`, in integer arithmetic."""
+    if micro_dollars < 0:
+        raise ValueError("micro_dollars must not be negative")
+    dollars, rest = divmod(micro_dollars, MICRO_DOLLARS_PER_DOLLAR)
+    return f"${dollars}.{rest:06d}"
+
+
+def format_cents(cents: int) -> str:
+    """Cents as `$1,359.00`, in integer arithmetic."""
+    if cents < 0:
+        raise ValueError("cents must not be negative")
+    dollars, rest = divmod(cents, CENTS_PER_DOLLAR)
+    return f"${dollars:,}.{rest:02d}"
