@@ -83,7 +83,9 @@ def test_end_to_end_stores_check_and_listings(tmp_path: Path) -> None:
     checks = run(world, store, ("https://a.example.com/",))
     assert checks[0].best is not None and checks[0].best.price == 140000
     assert checks[0].sources[0].status is SourceStatus.OK
+    assert checks[0].user_id == "u1"
     stored = store.list_checks("w1")[0]
+    assert stored.check.user_id == "u1"
     assert [item.price for item in stored.listings] == [140000, 160000]
     day = store.get_spend("DAY#2026-11-14")
     assert (day.cost, day.calls, day.input_tokens, day.output_tokens) == (200, 1, 100, 50)

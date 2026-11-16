@@ -144,6 +144,7 @@ def build_watch_check(
     listings.sort(key=lambda listing: listing.price)
     check = Check(
         watch_id=watch.watch_id,
+        user_id=watch.user_id,
         checked_at=timestamp,
         sources=tuple(results),
         best=pick_best(listings),
