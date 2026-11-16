@@ -1,0 +1,48 @@
+{
+  "watch_id": "w_01",
+  "checked_at": "2026-11-14T14:00:00Z",
+  "listings": [
+    {
+      "title": "Refurbished Mac mini, M6, 32GB, 512GB",
+      "price": 135900,
+      "condition": "refurbished",
+      "url": "https://example.com/listing",
+      "source_name": "Apple refurbished: Mac mini",
+      "meets_target": true,
+      "suspicious": false,
+      "suspicious_reason": null,
+      "status": "found",
+      "seen_at": "2026-11-14T14:00:00Z",
+      "meets_spec": true,
+      "spec_reason": "M6, 32GB, 512GB, Apple-certified refurbished"
+    },
+    {
+      "title": "Mac mini (manual)",
+      "price": 139900,
+      "condition": "unknown",
+      "url": null,
+      "source_name": "Manual",
+      "meets_target": true,
+      "suspicious": false,
+      "suspicious_reason": null,
+      "status": "confirmed",
+      "seen_at": "2026-11-12T09:30:00.250Z",
+      "meets_spec": true,
+      "spec_reason": "Entered by hand"
+    },
+    {
+      "title": "New Mac mini, M6, 32GB, 512GB",
+      "price": 159900,
+      "condition": "new",
+      "url": "https://example.com/new",
+      "source_name": "Apple Store",
+      "meets_target": false,
+      "suspicious": false,
+      "suspicious_reason": null,
+      "status": "found",
+      "seen_at": "2026-11-14T14:00:00Z",
+      "meets_spec": true,
+      "spec_reason": "Matches the spec, new"
+    }
+  ]
+}
