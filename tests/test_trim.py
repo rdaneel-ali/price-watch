@@ -38,3 +38,22 @@ def test_nothing_usable_returns_none() -> None:
 
 def test_html_sniffed_without_content_type() -> None:
     assert trim_page(page("<!doctype html><p>hi</p>", "")) == "hi"
+
+
+def test_redirected_page_resolves_links_against_its_final_url() -> None:
+    moved = FetchedPage("https://shop.example.com/new/index", "text/html", '<a href="item/1">A</a>')
+    text = trim_page(moved)
+    assert text is not None
+    assert "https://shop.example.com/new/item/1" in text
+
+
+def test_xhtml_is_trimmed_like_html() -> None:
+    text = trim_page(page(HTML, "application/xhtml+xml"))
+    assert text is not None
+    assert "var a" not in text and "Menu" not in text
+    assert "(https://shop.example.com/item/1)" in text
+
+
+def test_json_type_mentioning_html_passes_through() -> None:
+    body = '{"html": "<b>x</b>"}'
+    assert trim_page(page(body, "application/vnd.example.html-fragment+json")) == body

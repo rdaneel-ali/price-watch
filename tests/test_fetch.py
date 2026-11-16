@@ -83,6 +83,7 @@ def test_follows_https_redirects() -> None:
 
     page = fetch_url(client_for(httpx.MockTransport(handler)), "https://example.com/old")
     assert page.body == "moved"
+    assert page.url == "https://example.com/new"
 
 
 def test_refuses_redirect_to_http() -> None:
@@ -111,4 +112,30 @@ def test_cookies_are_not_kept() -> None:
     client = client_for(httpx.MockTransport(handler))
     fetch_url(client, "https://example.com")
     fetch_url(client, "https://example.com")
+    assert cookies_sent == [None, None]
+
+
+def test_cookies_already_in_the_client_are_not_sent() -> None:
+    cookies_sent: list[str | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        cookies_sent.append(request.headers.get("cookie"))
+        return httpx.Response(200, text="x")
+
+    client = client_for(httpx.MockTransport(handler))
+    client.cookies.set("pre", "x", domain="example.com")
+    fetch_url(client, "https://example.com")
+    assert cookies_sent == [None]
+
+
+def test_cookie_set_on_a_redirect_is_not_sent_to_the_next_hop() -> None:
+    cookies_sent: list[str | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        cookies_sent.append(request.headers.get("cookie"))
+        if request.url.path == "/old":
+            return httpx.Response(302, headers={"location": "/new", "set-cookie": "a=b"})
+        return httpx.Response(200, text="x")
+
+    fetch_url(client_for(httpx.MockTransport(handler)), "https://example.com/old")
     assert cookies_sent == [None, None]

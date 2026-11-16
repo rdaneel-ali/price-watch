@@ -22,7 +22,7 @@ class PageTooLargeError(FetchError):
 
 @dataclass(frozen=True, slots=True)
 class FetchedPage:
-    url: str
+    url: str  # the final URL after redirects, so relative links resolve against it
     content_type: str
     body: str
 
@@ -60,9 +60,9 @@ def fetch_url(
     current = url
     for _ in range(MAX_REDIRECTS + 1):
         require_https(current)
+        client.cookies.clear()  # no cookies, ever: none from earlier hops or calls are sent
         try:
             with client.stream("GET", current) as response:
-                client.cookies.clear()  # no cookies, ever
                 if response.status_code in REDIRECT_STATUSES:
                     location = response.headers.get("location")
                     if not location:
@@ -79,5 +79,7 @@ def fetch_url(
                 encoding = response.charset_encoding or "utf-8"
         except httpx.HTTPError as error:
             raise FetchError(f"request failed for {current!r}: {type(error).__name__}") from error
-        return FetchedPage(url=url, content_type=content_type, body=raw.decode(encoding, "replace"))
+        return FetchedPage(
+            url=current, content_type=content_type, body=raw.decode(encoding, "replace")
+        )
     raise FetchError(f"too many redirects from {url!r}")

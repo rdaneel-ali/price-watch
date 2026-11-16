@@ -10,6 +10,7 @@ from price_watch.fetch import FetchedPage
 
 DROPPED_TAGS = ("script", "style", "noscript", "nav", "template", "svg")
 PASS_THROUGH_MARKERS = ("json", "xml", "rss", "atom")
+HTML_TYPES = frozenset({"text/html", "application/xhtml+xml"})
 BLANK_LINES = re.compile(r"\n\s*\n+")
 
 
@@ -18,8 +19,12 @@ def is_pass_through(content_type: str) -> bool:
     return any(marker in lowered for marker in PASS_THROUGH_MARKERS)
 
 
+def media_type(content_type: str) -> str:
+    return content_type.split(";", 1)[0].strip().lower()
+
+
 def is_html(page: FetchedPage) -> bool:
-    return "html" in page.content_type.lower() or (
+    return media_type(page.content_type) in HTML_TYPES or (
         not page.content_type and page.body.lstrip()[:15].lower().startswith(("<!doctype", "<html"))
     )
 
@@ -39,10 +44,10 @@ def html_to_text(html: str, base_url: str) -> str:
 
 def trim_page(page: FetchedPage, max_characters: int = LIMITS.max_page_characters) -> str | None:
     """Return the page text cut at the limit, or None when nothing usable is left."""
-    if is_pass_through(page.content_type):
-        text = page.body.strip()
-    elif is_html(page):
+    if is_html(page):  # first, so application/xhtml+xml isn't passed through as XML
         text = html_to_text(page.body, page.url).strip()
+    elif is_pass_through(page.content_type):
+        text = page.body.strip()
     else:
         return None
     return text[:max_characters] or None

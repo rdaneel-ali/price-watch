@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -44,3 +45,10 @@ def test_bad_format_raises(tmp_path: Path) -> None:
 def test_path_from_env_with_default() -> None:
     assert resolve_store_path({STORE_PATH_ENV: "/x/y.json"}) == Path("/x/y.json")
     assert resolve_store_path({}) == DEFAULT_STORE_PATH
+
+
+def test_watch_key_must_match_watch_id(tmp_path: Path) -> None:
+    path = tmp_path / "s.json"
+    path.write_text(json.dumps({"watches": {"alias": make_watch("w1").model_dump(mode="json")}}))
+    with pytest.raises(ValueError, match="doesn't match"):
+        JsonFileStore(path).get_watch("alias")

@@ -3,9 +3,9 @@
 import os
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, Self
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from price_watch.models import Watch
 
@@ -14,6 +14,13 @@ class StoreDocument(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     watches: dict[str, Watch] = {}
+
+    @model_validator(mode="after")
+    def check_keys_match_ids(self) -> Self:
+        for key, watch in self.watches.items():
+            if key != watch.watch_id:
+                raise ValueError(f"store key {key!r} doesn't match watch_id {watch.watch_id!r}")
+        return self
 
 
 STORE_PATH_ENV = "PRICE_WATCH_STORE"
